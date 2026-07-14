@@ -4,10 +4,10 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
 
-from pdf2md.converter import convert_pdf_to_markdown
+from pdf2md.converter import EmptyConversionError, convert_pdf_to_markdown
 
 WINDOW_TITLE = "PDF a Markdown"
-WINDOW_SIZE = "560x260"
+WINDOW_SIZE = "620x280"
 
 
 class ConverterWindow(ttk.Frame):
@@ -21,7 +21,7 @@ class ConverterWindow(ttk.Frame):
 
         self.pdf_label = ttk.Label(self, text="Ningún PDF seleccionado")
         self.output_label = ttk.Label(self, text="Ninguna carpeta seleccionada")
-        self.status_label = ttk.Label(self, text="")
+        self.status_label = ttk.Label(self, text="", wraplength=560, justify="left")
         self.convert_button = ttk.Button(
             self,
             text="Convertir",
@@ -60,6 +60,7 @@ class ConverterWindow(ttk.Frame):
 
         self.pdf_path = Path(selected)
         self.pdf_label.config(text=self.pdf_path.name)
+        self.status_label.config(text="")
         self._refresh_convert_button()
 
     def on_select_output(self) -> None:
@@ -70,6 +71,7 @@ class ConverterWindow(ttk.Frame):
 
         self.output_directory = Path(selected)
         self.output_label.config(text=str(self.output_directory))
+        self.status_label.config(text="")
         self._refresh_convert_button()
 
     def _refresh_convert_button(self) -> None:
@@ -80,8 +82,8 @@ class ConverterWindow(ttk.Frame):
     def on_convert(self) -> None:
         """Run the conversion and report the outcome.
 
-        This blocks the event loop. Running the conversion in a background
-        thread is handled in a follow-up issue.
+        This blocks the event loop. Moving the conversion to a background thread
+        is handled in a follow-up issue.
         """
         if self.pdf_path is None or self.output_directory is None:
             return
@@ -94,9 +96,13 @@ class ConverterWindow(ttk.Frame):
             markdown_path = convert_pdf_to_markdown(
                 self.pdf_path, self.output_directory
             )
+        except EmptyConversionError as error:
+            self.status_label.config(text=str(error))
         except (FileNotFoundError, ValueError) as error:
             self.status_label.config(text=f"Error: {error}")
         except Exception as error:  # noqa: BLE001
+            # Last resort: Docling can fail in ways we do not control, and the
+            # application must report it instead of closing in the user's face.
             self.status_label.config(text=f"La conversión ha fallado: {error}")
         else:
             self.status_label.config(text=f"Creado: {markdown_path.name}")

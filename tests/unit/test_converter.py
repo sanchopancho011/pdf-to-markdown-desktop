@@ -5,12 +5,14 @@ These tests must never trigger a real Docling conversion.
 
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from pdf2md.converter import (
     build_output_path,
     create_output_directory,
+    has_extractable_content,
     validate_pdf_path,
 )
 
@@ -67,6 +69,26 @@ def test_build_output_path_replaces_extension(tmp_path: Path) -> None:
     assert build_output_path(source_path, destination) == destination / "report.md"
 
 
+def test_scanned_document_has_no_extractable_content() -> None:
+    """A scanned PDF yields pictures only. Docling calls that a success."""
+    scanned = SimpleNamespace(texts=[], tables=[], pictures=["page1", "page2"])
+
+    assert has_extractable_content(scanned) is False
+
+
+def test_document_with_text_has_extractable_content() -> None:
+    document = SimpleNamespace(texts=["heading"], tables=[], pictures=[])
+
+    assert has_extractable_content(document) is True
+
+
+def test_document_with_only_tables_has_extractable_content() -> None:
+    """A document made entirely of tables is still worth keeping."""
+    document = SimpleNamespace(texts=[], tables=["table"], pictures=[])
+
+    assert has_extractable_content(document) is True
+
+
 def test_importing_converter_does_not_import_docling() -> None:
     """Docling must be imported lazily, inside the conversion function.
 
@@ -75,8 +97,8 @@ def test_importing_converter_does_not_import_docling() -> None:
     decision: if it fails, someone moved the import to the top of the module.
 
     Note: this relies on `addopts = "-m 'not slow'"` in pyproject.toml, which
-    keeps the integration tests (the only ones that import Docling) from running
-    in the same session.
+    keeps the integration tests, the only ones that import Docling, out of this
+    session.
     """
     assert "pdf2md.converter" in sys.modules
 
