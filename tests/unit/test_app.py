@@ -5,7 +5,11 @@ display, which continuous integration runners do not have. These tests cover
 what can be verified without one.
 """
 
+import queue
 import sys
+from pathlib import Path
+
+from pdf2md.app import ConversionOutcome, _run_conversion
 
 
 def test_importing_app_does_not_import_docling() -> None:
@@ -18,12 +22,24 @@ def test_importing_app_does_not_import_docling() -> None:
     )
 
 
-def test_app_handles_empty_conversion_error() -> None:
-    """The interface must import the error it claims to handle.
+def test_worker_reports_errors_instead_of_dying_silently(tmp_path: Path) -> None:
+    """An exception escaping a worker thread would leave the UI waiting forever.
 
-    Cheap, but it catches a real mistake: renaming or removing the exception in
-    converter.py while leaving a dangling `except` clause behind.
+    Uses a missing file to provoke a real failure without invoking Docling.
     """
-    from pdf2md.app import EmptyConversionError
+    outbox: queue.Queue[ConversionOutcome] = queue.Queue()
 
-    assert issubclass(EmptyConversionError, Exception)
+    _run_conversion(tmp_path / "missing.pdf", tmp_path, outbox)
+
+    outcome = outbox.get_nowait()
+    assert outcome.markdown_path is None
+    assert isinstance(outcome.error, FileNotFoundError)
+
+
+def test_conversion_outcome_carries_the_exception_not_a_string() -> None:
+    """The worker reports what happened; the interface decides how to say it."""
+    error = ValueError("File is not a PDF")
+
+    outcome = ConversionOutcome(error=error)
+
+    assert outcome.error is error
