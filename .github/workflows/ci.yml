@@ -27,10 +27,12 @@ jobs:
           cache-dependency-path: requirements-lint.txt
 
       - name: Install dependencies
+        # Docling is deliberately not installed here: --no-deps keeps this job
+        # under two minutes. Real conversions are covered by the Windows workflow.
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-lint.txt
-          python -m pip install -e . --no-deps // Install the package in development mode without doclin to reduce runtime massively
+          python -m pip install -e . --no-deps
 
       - name: Check formatting
         run: ruff format --check .
