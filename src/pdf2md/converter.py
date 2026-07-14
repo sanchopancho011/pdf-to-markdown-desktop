@@ -69,22 +69,23 @@ def has_extractable_content(document: object) -> bool:
 def _convert_document(source_path: Path, *, force_ocr: bool) -> "DoclingDocument":
     """Run Docling over a PDF, optionally forcing full-page OCR.
 
-    Args:
-        source_path: Validated path to the PDF.
-        force_ocr: Whether to OCR every page, ignoring any embedded text layer.
-
-    Returns:
-        The converted document.
+    EasyOCR with Spanish is used instead of Docling's default engine, which is
+    RapidOCR with Chinese-oriented models: it drops accents, runs words together
+    and occasionally emits full-width punctuation. See
+    docs/decisions/0002-ocr-engine.md
     """
     # Imported here, not at module level, so that importing this module stays
     # cheap: unit tests and the user interface must not pay Docling's import cost.
     from docling.datamodel.base_models import InputFormat
-    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions
     from docling.document_converter import DocumentConverter, PdfFormatOption
+
+    ocr_options = EasyOcrOptions(lang=["es"])
+    ocr_options.force_full_page_ocr = force_ocr
 
     options = PdfPipelineOptions()
     options.do_ocr = True
-    options.ocr_options.force_full_page_ocr = force_ocr
+    options.ocr_options = ocr_options
 
     converter = DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
