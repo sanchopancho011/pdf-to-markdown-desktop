@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, type-check and unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-lint.txt
+
+      - name: Install dependencies
+        # Docling is deliberately not installed here: --no-deps keeps this job
+        # under two minutes. Real conversions are covered by the Windows workflow.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-lint.txt
+          python -m pip install -e . --no-deps
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Run lint checks
+        run: ruff check .
+
+      - name: Run type checks
+        run: mypy src
+
+      - name: Run unit tests
+        run: pytest tests/unit
