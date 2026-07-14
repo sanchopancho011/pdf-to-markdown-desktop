@@ -1,6 +1,6 @@
 # PDF to Markdown Desktop
 
-![PDF to Markdown Desktop](docs/images/screenshot.png)
+![PDF to Markdown Desktop](docs/images/app_overview.png)
 
 [![CI](https://github.com/sanchopancho011/pdf-to-markdown-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/sanchopancho011/pdf-to-markdown-desktop/actions/workflows/ci.yml)
 
