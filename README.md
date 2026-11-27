@@ -7,6 +7,9 @@
 A Windows desktop application that converts PDF documents into structured
 Markdown using [Docling](https://github.com/docling-project/docling).
 
+
+## App Language
+Spanish
 ## Why
 
 Copying text out of a PDF destroys its structure: headings collapse, tables
